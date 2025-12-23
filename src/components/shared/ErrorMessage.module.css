@@ -1,0 +1,51 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.icon {
+  font-size: 32px;
+  color: #ffc107;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+}
+
+.content h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #856404;
+}
+
+.content p {
+  margin: 0 0 12px 0;
+  color: #856404;
+  font-size: 14px;
+}
+
+.retryBtn {
+  background: #ffc107;
+  color: #856404;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.retryBtn:hover {
+  background: #e0a800;
+}
+
+.retryBtn i {
+  margin-left: 8px;
+}

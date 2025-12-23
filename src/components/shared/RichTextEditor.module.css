@@ -1,0 +1,144 @@
+.editorContainer {
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  flex-wrap: wrap;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 4px;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 24px;
+  background: #dee2e6;
+}
+
+.toolBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.toolBtn:hover {
+  background: #e9ecef;
+  color: #007bff;
+}
+
+.toolBtn:active {
+  background: #dee2e6;
+}
+
+.toolBtn i {
+  font-size: 14px;
+}
+
+.variableSelect {
+  padding: 6px 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  color: #495057;
+}
+
+.variableSelect:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.editor {
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #212529;
+  direction: rtl;
+  text-align: right;
+}
+
+.editor:focus {
+  outline: none;
+}
+
+.editor[data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #adb5bd;
+}
+
+/* Variable styling */
+.editor :global(.variable),
+.variable {
+  background: #e7f3ff;
+  color: #0056b3;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+  margin: 0 2px;
+  cursor: default;
+  user-select: none;
+}
+
+/* Scrollbar */
+.editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.editor::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.editor::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 6px 8px;
+  }
+
+  .toolBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .variableSelect {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .editor {
+    min-height: 150px;
+    padding: 12px;
+  }
+}
