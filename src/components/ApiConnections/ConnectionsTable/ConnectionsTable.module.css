@@ -545,3 +545,49 @@
   word-break: break-all;
   flex: 1;
 }
+/* ✅ עיצוב לטוקן הלחיץ */
+.tokenClickable {
+  cursor: pointer;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  margin: 10px 0;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  direction: ltr;
+}
+
+.tokenClickable:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+  transform: translateY(-1px);
+}
+
+.tokenClickable:active {
+  transform: translateY(0);
+}
+
+/* ✅ הודעת הצלחה */
+.copiedMsg {
+  color: #28a745;
+  font-weight: bold;
+  margin: 8px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -5,9 +5,19 @@ import { getIconForConnectionType } from '../../../constants/connectionTypes';
 
 const ConnectionRow = ({ connection, onEdit, onTest, onDelete, onViewToken }) => {
   const [showQR, setShowQR] = useState(false); // ✅ הוסף state
+    const [copied, setCopied] = useState(false);
   
-  console.log(connection);
-  
+
+    
+  // ✅ פונקציה להעתקת הטוקן
+  const handleCopyToken = () => {
+    navigator.clipboard.writeText(connection.apiToken).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // אחרי 2 שניות, תחזיר למצב רגיל
+    }).catch(err => {
+      console.error('שגיאה בהעתקת הטוקן:', err);
+    });
+  };
   const formatLastUsed = (date) => {
     if (!date) return 'מעולם לא נעשה בו שימוש';
     
@@ -122,7 +132,23 @@ const ConnectionRow = ({ connection, onEdit, onTest, onDelete, onViewToken }) =>
               level="H"
               includeMargin={true}
             />
-            
+                        {/* ✅ לחיצה להעתקה */}
+                <h6 
+                  className={styles.tokenClickable}
+                  onClick={handleCopyToken}
+                  title="לחץ להעתקה"
+                >
+                  {connection.apiToken}
+                  <i className={`fa ${copied ? 'fa-check' : 'fa-copy'}`} style={{ marginRight: '8px' }}></i>
+                </h6>
+                
+                {/* ✅ הודעת הצלחה */}
+                {copied && (
+                  <p className={styles.copiedMsg}>
+                    ✓ הועתק ללוח!
+                  </p>
+                )}
+
             <p className={styles.qrHint}>
               <i className="fa fa-mobile"></i>
               סרוק עם המכשיר שלך

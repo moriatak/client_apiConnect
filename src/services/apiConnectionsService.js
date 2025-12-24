@@ -733,14 +733,44 @@ function buildCreateConnectionRequest(data) {
     };
   }
 
-  // תבנית אימייל
-  if (data.thankYouEmail) {
-    request.emailTemplates = {
-      emailNote: data.thankYouEmail,
-      paySuccessMailTitle: 'תשלום בוצע בהצלחה',
-      thankYouPage: data.thankYouEmail
-    };
+ // ✅ תבנית אימייל - רק אם יש תוכן אמיתי
+// ✅ תבנית אימייל - רק אם יש תוכן אמיתי
+const hasEmailContent = data.email || data.emailName || data.emailSubject || data.thankYouEmail;
+
+console.log('🔍 Email fields received:', {
+  email: data.email,
+  emailName: data.emailName,
+  emailSubject: data.emailSubject,
+  thankYouEmail: data.thankYouEmail
+});
+
+console.log('🔍 hasEmailContent:', hasEmailContent);
+
+if (hasEmailContent) {
+  request.emailTemplates = {};
+  
+  // ✅ הוסף רק שדות שיש להם ערך - תיקון הבדיקה
+  if (data.email && data.email.trim()) {
+    request.emailTemplates.email = data.email.trim();
   }
+  if (data.emailName && data.emailName.trim()) {
+    request.emailTemplates.emailName = data.emailName.trim();
+  }
+  if (data.emailSubject && data.emailSubject.trim()) {
+    request.emailTemplates.paySuccessMailTitle = data.emailSubject.trim();
+  }
+  if (data.thankYouEmail && data.thankYouEmail.trim()) {
+    request.emailTemplates.emailNote = data.thankYouEmail.trim();
+  }
+  
+  // sendEmail - רק אם יש מייל
+  if (data.email && data.email.trim()) {
+    request.emailTemplates.sendEmail = data.sendEmail !== false;
+  }
+  
+  console.log('✅ emailTemplates created:', request.emailTemplates);
+}
+
 
   // הגדרות תצוגה
   request.display = {
@@ -795,13 +825,43 @@ function buildUpdateConnectionRequest(updates) {
   }));
   if (Array.isArray(updates.items)) request.items = updates.items;
 
-  if (updates.thankYouEmail || updates.emailSubject) {
-    request.emailTemplates = {
-      emailNote: updates.thankYouEmail || '',
-      paySuccessMailTitle: updates.emailSubject || 'תשלום בוצע בהצלחה',
-      thankYouPage: updates.thankYouEmail || ''
-    };
+// ✅ תבנית אימייל - רק אם יש תוכן אמיתי
+const hasEmailContent = updates.email || updates.emailName || updates.emailSubject || updates.thankYouEmail;
+
+console.log('🔍 Email fields received:', {
+  email: updates.email,
+  emailName: updates.emailName,
+  emailSubject: updates.emailSubject,
+  thankYouEmail: updates.thankYouEmail
+});
+
+console.log('🔍 hasEmailContent:', hasEmailContent);
+
+if (hasEmailContent) {
+  request.emailTemplates = {};
+  
+  // ✅ הוסף רק שדות שיש להם ערך - תיקון הבדיקה
+  if (updates.email && updates.email.trim()) {
+    request.emailTemplates.email = updates.email.trim();
   }
+  if (updates.emailName && updates.emailName.trim()) {
+    request.emailTemplates.emailName = updates.emailName.trim();
+  }
+  if (updates.emailSubject && updates.emailSubject.trim()) {
+    request.emailTemplates.paySuccessMailTitle = updates.emailSubject.trim();
+  }
+  if (updates.thankYouEmail && updates.thankYouEmail.trim()) {
+    request.emailTemplates.emailNote = updates.thankYouEmail.trim();
+  }
+  
+  // sendEmail - רק אם יש מייל
+  if (updates.email && updates.email.trim()) {
+    request.emailTemplates.sendEmail = updates.sendEmail !== false;
+  }
+  
+  console.log('✅ emailTemplates created:', request.emailTemplates);
+}
+
 
   return request;
 }

@@ -31,34 +31,8 @@ const ConnectionFormModal = ({
     const [showSummary, setShowSummary] = useState(false);
     const isEditMode = !!connection;
 
-    // טעינת נתונים בעריכה
-    //   useEffect(() => {
-    //     if (connection) {
-    //       setFormData({
-    //         ...connection
-    //       });
-    //     }
-    //   }, [connection]);
-    // useEffect(() => {
-    //     if (connection) {
-    //         // מצב עריכה
-    //         setFormData({
-    //             ...connection
-    //         });
-    //     } else if (connectionTypes.length > 0 && formData.connectionType) {
-    //         // מצב חדש - מילוי שם אוטומטי
-    //         const selectedType = connectionTypes.find(t => t.IdConnectType === formData.connectionType);
-    //         if (selectedType && !formData.connectionName) {
-    //             setFormData(prev => ({
-    //                 ...prev,
-    //                 connectionName: `${selectedType.Description} - ${new Date().toLocaleDateString('he-IL')}`
-    //             }));
-    //         }
-    //     }
-    // }, [connection, formData.connectionType, connectionTypes]);
 useEffect(() => {
   if (connection) {
-    console.log('🔍 DEBUG: connection received:', connection); // DEBUG
     
     // ✅ מצב עריכה — טוען את כל הנתונים מהחיבור הקיים
     setFormData({
@@ -76,9 +50,12 @@ useEffect(() => {
       items: connection.items || [],
       
       // ✅ הוסף שדות נוספים שחוזרים מהשרת
-      email: connection.email || '',
-      emailName: connection.emailName || '',
-      sendEmail: connection.sendEmail || false,
+     
+      // ✅ 4 שדות מייל
+      email: connection.email || connection.Email || '',  // ⬅️ הוסף גם Email עם E גדולה
+      emailName: connection.emailName || connection.EmailName || '',
+      emailSubject: connection.emailSubject || connection.paySuccessMailTitle || '',
+      thankYouEmail: connection.thankYouEmail || connection.emailNote || connection.EmailNote || '',
       maxNumPay: connection.maxNumPay || 1,
       specialOptions: connection.specialOptions || [],
       rules: connection.rules || '',
@@ -149,7 +126,13 @@ useEffect(() => {
             setShowSummary(true);
             return;
         }
-
+ // 🔍 DEBUG: בדיקה לפני שליחה
+  console.log('📤 formData before save:', {
+    email: formData.email,
+    emailName: formData.emailName,
+    emailSubject: formData.emailSubject,
+    thankYouEmail: formData.thankYouEmail
+  });
         // ✅ אחרי אישור - שמור
         setLoading(true);
       try {
@@ -362,12 +345,7 @@ useEffect(() => {
 //     </div>
 // );
 const BasicSection = ({ formData, onChange, connectionTypes, isEditMode }) => {
-  // ✅ DEBUG
-  console.log('🔍 BasicSection rendered with formData:', {
-    connectionName: formData.connectionName,
-    connectionDescription: formData.connectionDescription,
-    connectionType: formData.connectionType
-  });
+
 
   return (
     <div className={styles.section}>
@@ -411,7 +389,6 @@ const BasicSection = ({ formData, onChange, connectionTypes, isEditMode }) => {
           type="text"
           value={formData.connectionName || ''}  // ✅ הוסף fallback
           onChange={(e) => {
-            console.log('📝 Changed connectionName to:', e.target.value);
             onChange('connectionName', e.target.value);
           }}
           placeholder="למשל: קמפיין תרומות 2024"
@@ -424,7 +401,6 @@ const BasicSection = ({ formData, onChange, connectionTypes, isEditMode }) => {
         <textarea
           value={formData.connectionDescription || ''}  // ✅ הוסף fallback
           onChange={(e) => {
-            console.log('📝 Changed connectionDescription to:', e.target.value);
             onChange('connectionDescription', e.target.value);
           }}
           placeholder="תאר את מטרת החיבור..."
@@ -928,7 +904,7 @@ const AdvancedSection = ({ formData, onChange }) => {
       </div>
 
       {/* מייל תודה */}
-      {showEmail && (
+      {/* {showEmail && (
         <div className={styles.optionalSection}>
           <h5><i className="fa fa-envelope"></i> תבנית מייל תודה</h5>
           <div className={styles.formGroup}>
@@ -954,8 +930,64 @@ const AdvancedSection = ({ formData, onChange }) => {
             </span>
           </div>
         </div>
-      )}
+      )} */}
+{showEmail && (
+  <div className={styles.optionalSection}>
+    <h5><i className="fa fa-envelope"></i> תבנית מייל תודה</h5>
+    
+    {/* 🆕 1️⃣ מייל לעדכון */}
+    <div className={styles.formGroup}>
+      <label>כתובת מייל לקבלת עדכונים:</label>
+      <input
+        type="email"
+        placeholder="example@company.com"
+        value={formData.email || ''}
+        onChange={(e) => onChange('email', e.target.value)}
+      />
+      <span className={styles.hint}>
+        <i className="fa fa-info-circle"></i>
+        כתובת המייל שתקבל התראות על תשלומים
+      </span>
+    </div>
 
+    {/* 🆕 2️⃣ שם המייל לעדכון */}
+    <div className={styles.formGroup}>
+      <label>שם השולח במייל עדכונים:</label>
+      <input
+        type="text"
+        placeholder="שם החברה"
+        value={formData.emailName || ''}
+        onChange={(e) => onChange('emailName', e.target.value)}
+      />
+    </div>
+
+    {/* ✅ 3️⃣ נושא המייל לקונה (כבר קיים) */}
+    <div className={styles.formGroup}>
+      <label>נושא המייל לקונה:</label>
+      <input
+        type="text"
+        placeholder="תודה על תרומתך!"
+        value={formData.emailSubject || ''}
+        onChange={(e) => onChange('emailSubject', e.target.value)}
+      />
+    </div>
+
+    {/* ✅ 4️⃣ תוכן המייל לקונה (כבר קיים) */}
+    <div className={styles.formGroup}>
+      <label>תוכן המייל לקונה:</label>
+      <textarea
+        rows="6"
+        placeholder="שלום ,&#10;&#10;תודה רבה על תרומתך בסך ..."
+        value={formData.thankYouEmail || ''}
+        onChange={(e) => onChange('thankYouEmail', e.target.value)}
+      />
+      {/* <span className={styles.hint}>
+        <i className="fa fa-lightbulb-o"></i>
+        משתנים זמינים: {'{שם_לקוח}'}, {'{סכום}'}, {'{תאריך}'}
+      </span> */}
+    </div>
+  </div>
+)}
       {/* פריטים */}
       {showItems && (
         <div className={styles.optionalSection}>
@@ -1154,26 +1186,51 @@ const SummarySection = ({ formData }) => {
         )}
       </div>
 
-      {/* מייל תודה */}
-      {(formData.emailSubject || formData.thankYouEmail) && (
-        <div className={styles.summaryCard}>
-          <h5><i className="fa fa-envelope"></i> תבנית מייל תודה</h5>
-          {formData.emailSubject && (
-            <div className={styles.summaryRow}>
-              <strong>נושא:</strong>
-              <span>{formData.emailSubject}</span>
-            </div>
-          )}
-          {formData.thankYouEmail && (
-            <div className={styles.emailPreviewBox}>
-              <strong>תוכן המייל:</strong>
-              <div className={styles.emailContent}>
-                {formData.thankYouEmail}
-              </div>
-            </div>
-          )}
+      {/* מייל תודה - עדכון ל-4 שדות */}
+{(formData.email || formData.emailName || formData.emailSubject || formData.thankYouEmail) && (
+  <div className={styles.summaryCard}>
+    <h5><i className="fa fa-envelope"></i> הגדרות מייל</h5>
+    
+    {/* 1️⃣ מייל לעדכון */}
+    {formData.email && (
+      <div className={styles.summaryRow}>
+        <strong>כתובת מייל לעדכונים:</strong>
+        <span>{formData.email}</span>
+      </div>
+    )}
+    
+    {/* 2️⃣ שם המייל לעדכון */}
+    {formData.emailName && (
+      <div className={styles.summaryRow}>
+        <strong>שם השולח:</strong>
+        <span>{formData.emailName}</span>
+      </div>
+    )}
+    
+    {/* קו מפריד אם יש שדות עדכונים */}
+    {(formData.email || formData.emailName) && (formData.emailSubject || formData.thankYouEmail) && (
+      <hr className={styles.divider} />
+    )}
+    
+    {/* 3️⃣ נושא המייל לקונה */}
+    {formData.emailSubject && (
+      <div className={styles.summaryRow}>
+        <strong>נושא המייל ללקוח:</strong>
+        <span>{formData.emailSubject}</span>
+      </div>
+    )}
+    
+    {/* 4️⃣ תוכן המייל לקונה */}
+    {formData.thankYouEmail && (
+      <div className={styles.emailPreviewBox}>
+        <strong>תוכן המייל ללקוח:</strong>
+        <div className={styles.emailContent}>
+          {formData.thankYouEmail}
         </div>
-      )}
+      </div>
+    )}
+  </div>
+)}
 
       {/* פריטים */}
       {formData.items && formData.items.length > 0 && (

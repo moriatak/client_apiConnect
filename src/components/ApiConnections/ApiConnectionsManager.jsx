@@ -91,12 +91,13 @@ const ApiConnectionsManager = () => {
 
     if (result.success) {
       showSuccess('החיבור נוצר בהצלחה!', 'success');
+console.log('Connection created successfully:', result.data);
 
       // הצג Tokens רק ביצירה
       if (result.data) {
         setConnectionTokens({
-          token: result.data.token?.trim(),
-          apiToken: result.data.apiToken,
+          // token: result.data.token?.trim(),
+          apiToken: result.data.ApiToken,
           connectionName: formData.connectionName
         });
         setShowTokenModal(true);
@@ -222,7 +223,7 @@ const handleEditConnection = async (connection) => {
         </>
       )}
       {/* Token Modal */}
-      {showTokenModal && connectionTokens && (
+      {/* {showTokenModal && connectionTokens && (
         <TokenModal
           connection={connectionTokens}
           onClose={() => {
@@ -230,7 +231,7 @@ const handleEditConnection = async (connection) => {
             setConnectionTokens(null);
           }}
         />
-      )}
+      )} */}
       {/* Documentation Section */}
       <div className={styles.documentation}>
         <h3>תיעוד ומדריך</h3>
