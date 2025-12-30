@@ -1,10 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import styles from './Notification.module.css';
 
 const Notification = ({ id, message, type, duration }) => {
   const { removeNotification } = useNotification();
   const [isExiting, setIsExiting] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      removeNotification(id);
+    }, 300); // זמן האנימציה
+  }, [id, removeNotification]);
 
   useEffect(() => {
     if (duration > 0) {
@@ -14,14 +21,7 @@ const Notification = ({ id, message, type, duration }) => {
 
       return () => clearTimeout(timer);
     }
-  }, [duration]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      removeNotification(id);
-    }, 300); // זמן האנימציה
-  };
+  }, [duration, handleClose]);
 
   const getIcon = () => {
     switch (type) {

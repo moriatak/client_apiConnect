@@ -58,30 +58,23 @@ const ApiConnectionsManager = () => {
  const handleSaveConnection = async (formData) => {
   try {
     setSubmitting(true);
+    
 
-    // ✅ אם יש editingConnection => עריכה (update)
-    if (editingConnection?.id) {
-      const result = await apiConnectionsService.updateConnection(editingConnection.id, {
-        connectionName: formData.connectionName,
-        connectionDescription: formData.connectionDescription,
-        connectionStatus: formData.connectionStatus,
-        paymentMethods: formData.paymentMethods,
-        paymentButtonTexts: formData.paymentButtonTexts,
-        campaignType: formData.campaignType,
-        settings: formData.settings,
-        emailSubject: formData.emailSubject,
-        thankYouEmail: formData.thankYouEmail,
-        items: formData.items
-      });
+
+        if (editingConnection?.id) {
+      const result = await apiConnectionsService.updateConnection(
+        editingConnection.id, 
+        formData  // ✅ שלח הכל!
+      );
 
       if (result.success) {
-        showSuccess('החיבור עודכן בהצלחה!', 'success');
+        showSuccess('החיבור עודכן בהצלחה!');
         await loadConnections();
         setShowFormModal(false);
         setEditingConnection(null);
         return { success: true, data: result.data };
       } else {
-        showError(result.message || 'שגיאה בעדכון החיבור', 'error');
+        showError(result.message || 'שגיאה בעדכון החיבור');
         return { success: false, message: result.message };
       }
     }
@@ -90,7 +83,7 @@ const ApiConnectionsManager = () => {
     const result = await apiConnectionsService.createConnection(formData);
 
     if (result.success) {
-      showSuccess('החיבור נוצר בהצלחה!', 'success');
+      showSuccess('החיבור נוצר בהצלחה!');
 console.log('Connection created successfully:', result.data);
 
       // הצג Tokens רק ביצירה
@@ -107,12 +100,12 @@ console.log('Connection created successfully:', result.data);
       setShowFormModal(false);
       return { success: true, data: result.data };
     } else {
-      showError(result.message || 'שגיאה ביצירת החיבור', 'error');
+      showError(result.message || 'שגיאה ביצירת החיבור');
       return { success: false, message: result.message };
     }
   } catch (error) {
     console.error('Error saving connection:', error);
-    showError('שגיאה: ' + error.message, 'error');
+    showError('שגיאה: ' + error.message);
     return { success: false, message: error.message };
   } finally {
     setSubmitting(false);
@@ -191,15 +184,7 @@ const handleEditConnection = async (connection) => {
         connection={editingConnection}
         connectionTypes={connectionTypes}
       />
-      {/* {!showWizard && (
-        <button 
-          className={styles.addButton}
-          onClick={() => setShowWizard(true)}
-          disabled={loading}
-        >
-          <i className="fa fa-plus"></i> הוסף חיבור חדש
-        </button>
-      )} */}
+ 
 
       {showWizard && (
         <ConnectionWizard
@@ -222,16 +207,7 @@ const handleEditConnection = async (connection) => {
           )}
         </>
       )}
-      {/* Token Modal */}
-      {/* {showTokenModal && connectionTokens && (
-        <TokenModal
-          connection={connectionTokens}
-          onClose={() => {
-            setShowTokenModal(false);
-            setConnectionTokens(null);
-          }}
-        />
-      )} */}
+
       {/* Documentation Section */}
       <div className={styles.documentation}>
         <h3>תיעוד ומדריך</h3>

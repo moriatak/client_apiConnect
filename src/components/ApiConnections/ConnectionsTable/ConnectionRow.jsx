@@ -36,6 +36,7 @@ const ConnectionRow = ({ connection, onEdit, onTest, onDelete, onViewToken }) =>
 
   const formatPaymentMethods = (methods) => {
     if (!methods || methods.length === 0) return 'לא הוגדרו';
+    console.log(methods);
     
     const methodNames = {
       'credit_card': 'כרטיס אשראי',
@@ -83,12 +84,13 @@ const ConnectionRow = ({ connection, onEdit, onTest, onDelete, onViewToken }) =>
       {/* אמצעי תשלום */}
       <td>
         <div className={styles.paymentMethodsCell}>
+          {console.log(connection)}
           {formatPaymentMethods(connection.paymentMethods)}
         </div>
       </td>
 
       {/* Token */}
-      <td>
+      {/* <td>
         <button
           className={styles.tokenBtn}
           onClick={() => onViewToken(connection)}
@@ -97,7 +99,7 @@ const ConnectionRow = ({ connection, onEdit, onTest, onDelete, onViewToken }) =>
           <i className="fa fa-key"></i>
           {connection.token ? `${connection.apiToken.substring(0, 3)}...` : 'לא זמין'}
         </button>
-      </td>
+      </td> */}
 
       {/* QA ID / QR Code */}
       <td>

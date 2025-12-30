@@ -369,6 +369,43 @@
   padding-right: 32px;
 }
 
+/* Input with Hint wrapper */
+.inputWithHint {
+  margin-top: 8px;
+}
+
+.inputWithHint select,
+.inputWithHint input {
+  /* width: 100%; */
+  padding: 6px 6px;
+  border: 2px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s;
+  font-family: inherit;
+  background: white;
+}
+
+.inputWithHint select:focus,
+.inputWithHint input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.inputWithHint select:hover,
+.inputWithHint input:hover {
+  border-color: #9ca3af;
+}
+
+.inputWithHint .hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-right: 0;
+}
+
 /* Campaign Type Section */
 .campaignTypeSection {
   margin-top: 24px;
@@ -454,14 +491,16 @@
 }
 /* Optional Buttons */
 .optionalButtons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  /* grid-template-columns: repeat(2, 1fr); */
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .optionalBtn {
-  padding: 16px;
+  padding: 16px  2.5rem;
   border: 2px dashed var(--border-color);
   background: white;
   border-radius: 8px;

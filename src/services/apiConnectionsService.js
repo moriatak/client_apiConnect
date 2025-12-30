@@ -1,4 +1,4 @@
-import { mockApiConnectionsService } from './mockApiConnectionsService';
+// import { mockApiConnectionsService } from './mockApiConnectionsService';
 import { auth } from '../utils/auth';
 
 // ✅ הגדרות בסיס
@@ -130,7 +130,10 @@ const realApiService = {
     try {
       const companyId = getCompanyId();
       const url = `${API_BASE_URL}/createConnect/${companyId}`;
-
+ // 🔍 DEBUG - מה מגיע לפונקציה
+    console.log('🔍 createConnection - connectionData received:', connectionData);
+    console.log('🔍 connectionData.email:', connectionData.email);
+    console.log('🔍 connectionData.emailName:', connectionData.emailName);
       // בניית הבקשה לפי הפורמט של השרת
       const requestBody = buildCreateConnectionRequest(connectionData);
     console.log('📤 Creating connection:', requestBody); // ✅ DEBUG
@@ -178,30 +181,7 @@ const realApiService = {
       const connectionTypes = typesResult.success ? typesResult.data : [];
 
       const url = `${API_BASE_URL}/get_connections/${companyId}`;
-  //    const response = await fetch(url);
-  //     const result = await response.json();
 
-  //     if (result.success && Array.isArray(result.data)) {
-  //       // ✅ שימוש ב־mapConnectionFromServer כדי לקבל את כל הנתונים
-  //       const connections = await Promise.all(
-  //         result.data.map(async (conn) => {
-  //           return await mapConnectionFromServer(conn, companyId, connectionTypes);
-  //         })
-  //       );
-
-  //       console.log('📥 Loaded connections:', connections); // DEBUG
-  //       return {
-  //         success: true,
-  //         connections: connections
-  //       };
-  //     }
-
-  //     return { success: false, message: 'Failed to fetch connections', connections: [] };
-  //   } catch (error) {
-  //     console.error('Error fetching connections:', error);
-  //     return { success: false, message: error.message, connections: [] };
-  //   }
-  // },
       const response = await fetch(url);
       const result = await response.json();
 
@@ -220,7 +200,7 @@ const realApiService = {
             name: conn.Title || conn.Name,
             description: conn.Description || '',
             status: conn.Active ? 'active' : 'inactive',
-            paymentMethods: mapPayOptionsToMethods(conn.PayOptions || 0),
+            paymentMethods: mapPayOptionsToMethods(conn.PaymentMethodIds || conn.PaymentMethods || []),
             token: conn.Token?.trim() || '',
             apiToken: conn.ApiToken || '',
             qaId: conn.Token?.trim() || '',
@@ -296,7 +276,9 @@ async getConnectionDetails(connectionId) {
           rules: result.data.rules,
           rulesTitle: result.data.rulesTitle,
           rulesShow: result.data.rulesShow,
-          discount: result.data.discount || {}
+          discount: result.data.discount || {},
+          recurringContractId: result.data.recurringContractId || normalized.recurringContractId,
+          recurringBankContractId: result.data.recurringBankContractId || normalized.recurringBankContractId
         }
       };
     }
@@ -312,7 +294,10 @@ async getConnectionDetails(connectionId) {
     try {
       const companyId = getCompanyId();
       const url = `${API_BASE_URL}/updateConnect/${companyId}`;
-
+    // 🔍 DEBUG - מה מגיע לפונקציה
+    console.log('🔍 updateConnection - updates received:', updates);
+    console.log('🔍 updates.email:', updates.email);
+    console.log('🔍 updates.emailName:', updates.emailName);
       const requestBody = {
         cId: connectionId,
         ...buildUpdateConnectionRequest(updates)
@@ -469,85 +454,162 @@ async getConnectionDetails(connectionId) {
       console.error('Error fetching items:', error);
       return { success: false, message: error.message };
     }
+  },
+
+  // קבלת חוזים זמינים
+  async getAllContracts() {
+    try {
+      const companyId = getCompanyId();
+      const url = `${API_BASE_URL}/getAllContrac/${companyId}`;
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.success && Array.isArray(result.data)) {
+        // סנן רק חוזים פעילים
+        const activeContracts = result.data.filter(contract => contract.active);
+
+        return {
+          success: true,
+          contracts: activeContracts.map(contract => ({
+            id: contract.id,
+            takId: contract.takId,
+            name: contract.name,
+            active: contract.active
+          }))
+        };
+      }
+
+      return { success: false, message: 'Failed to fetch contracts', contracts: [] };
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      return { success: false, message: error.message, contracts: [] };
+    }
   }
 };
 
 
-// מיפוי PayOptions לאמצעי תשלום
+
 function mapPayOptionsToMethods(payOptions) {
-  const methods = [];
+  console.log('🔧 mapPayOptionsToMethods - payOptions:', payOptions, 'Type:', typeof payOptions);
+  
+  // ✅ Normalize to array - טיפול בstring עם פסיקים
+  let ids = [];
+  
+  if (typeof payOptions === 'string') {
+    // ✅ אם זה string עם פסיקים: "11,1" → [11, 1]
+    ids = payOptions.split(',').map(id => parseInt(id.trim())).filter(Boolean);
+  } else if (Array.isArray(payOptions)) {
+    // ✅ אם זה כבר array: [11, 1]
+    ids = payOptions.map(id => typeof id === 'string' ? parseInt(id) : id).filter(Boolean);
+  } else if (typeof payOptions === 'number') {
+    // ✅ אם זה מספר בודד: 1 → [1]
+    ids = [payOptions];
+  }
+  
+  console.log('🔍 Normalized IDs:', ids);
+  
+  if (ids.length === 0) {
+    console.log('⚠️ payOptions is empty');
+    return [];
+  }
 
-  // PayOptions הוא bit-wise
-  if (payOptions & 1) methods.push('credit');      // 1 = כרטיס אשראי
-  if (payOptions & 2) methods.push('bit');         // 2 = ביט
-  if (payOptions & 4) methods.push('paypal');      // 4 = PayPal
-  if (payOptions & 8) methods.push('bank');        // 8 = העברה בנקאית
-  if (payOptions & 16) methods.push('standing_order'); // 16 = הוראת קבע
-  if (payOptions & 32) methods.push('direct');     // 32 = סליקה ישירה
-
-  return methods;
+  const methodMapping = {
+    1: 'credit_card',
+    2: 'credit_card',
+    5: 'recurring_payment',
+    8: 'recurring_payment_immediate',
+    11: 'bit',
+    13: 'paybox',
+    14: 'open_finance',
+    15: 'gama_bit',
+    16: 'recurring_payment_bank',
+    22: 'cash',
+    23: 'credit_card_touch'
+  };
+  
+  const extracted = ids
+    .map(id => methodMapping[id])
+    .filter(Boolean);
+  
+  console.log('✅ Methods extracted:', extracted);
+  return extracted;
 }
-
-
-// מיפוי אמצעי תשלום ל-PayOptions
+// ✅ מיפוי אמצעי תשלום ל-PayOptions - ההפך
+// ✅ מיפוי אמצעי תשלום - חזור IDs AND שמות (ללא כפילויות!)
 function mapMethodsToPayOptions(methods) {
-  let payOptions = 0;
+  console.log('🔧 mapMethodsToPayOptions - methods:', methods);
 
-  methods.forEach(method => {
-    switch (method) {
-      case 'credit': payOptions |= 1; break;
-      case 'bit': payOptions |= 2; break;
-      case 'paypal': payOptions |= 4; break;
-      case 'bank': payOptions |= 8; break;
-      case 'standing_order': payOptions |= 16; break;
-      case 'direct': payOptions |= 32; break;
-    }
-  });
+  if (!Array.isArray(methods)) {
+    console.log('⚠️ methods is not an array');
+    return { ids: [], names: [] };
+  }
 
-  return payOptions;
+  // ✅ הסר כפילויות באמצעות Set
+  const uniqueMethods = [...new Set(methods)];
+  console.log('🔍 Unique methods after deduplication:', uniqueMethods);
+
+  const methodToIdMapping = {
+    'credit_card': 1,
+    'recurring_payment': 5,
+    'recurring_payment_immediate': 8,
+    'bit': 11,
+    'paybox': 13,
+    'open_finance': 14,
+    'gama_bit': 15,
+    'recurring_payment_bank': 16,
+    'cash': 22,
+    'credit_card_touch': 23
+  };
+
+  // ✅ חלץ IDs (ללא כפילויות)
+  const ids = uniqueMethods
+    .map(method => methodToIdMapping[method])
+    .filter(id => id !== undefined);
+
+  console.log('✅ IDs extracted from methods:', ids);
+  console.log('✅ Names (methods):', uniqueMethods);
+
+  // ✅ חזור גם IDs וגם שמות
+  return {
+    ids: ids,                          // [8, 16] (ללא כפילויות)
+    names: uniqueMethods,              // ['recurring_payment_immediate', 'recurring_payment_bank']
+    idsString: ids.join(','),          // "8,16"
+    namesString: uniqueMethods.join(',')  // "recurring_payment_immediate,recurring_payment_bank"
+  };
 }
-// ❌ הסר את זה (קומנט או מחק)
-// async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
-//   const connectionType = connectionTypes.find(t => t.IdConnectType === conn.IdConnectType);
-// }
 
-// ✅ שמור רק על הגדרה אחת (המלאה):
 async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
   console.log('🔧 mapConnectionFromServer - conn object:', conn);
   console.log('🔍 Available connectionTypes:', connectionTypes);
   
   const connId = conn.C_id || conn.Id || conn.id;
-  console.log('🔍 Extracted ID:', connId, 'from conn object');
-  
-  // ✅ תיקון: השרת מחזיר 'connectionType', לא 'IdConnectType'
   const connTypeId = conn.IdConnectType || conn.connectionType;
-  console.log('🔍 Looking for connectionType:', connTypeId); // ✅ DEBUG
   
-  // ✅ בדוק איזה שדה קיים בשרת
-  const connectionType = connectionTypes.find(t => {
-    console.log('🔍 Comparing:', t.IdConnectType, 'vs', connTypeId);
-    return t.IdConnectType === connTypeId;
-  });
+  const connectionType = connectionTypes.find(t => t.IdConnectType === connTypeId);
   
-  console.log('✅ Found connectionType:', connectionType); // ✅ DEBUG
+  // ✅ השתמש ב-PaymentMethodIds או paymentMethods (לפי מה שהשרת שולח)
+  console.log('🔍 Payment Methods from server:');
+  console.log('  - conn.PaymentMethodIds:', conn.PaymentMethodIds);
+  console.log('  - conn.paymentMethods:', conn.paymentMethods);
+  console.log('  - conn.PaymentMethods:', conn.PaymentMethods);
   
-  // ✅ הושלמה הפונקציה בשלמותה:
+  const paymentMethodIds = conn.PaymentMethodIds || conn.paymentMethods || conn.PaymentMethods || [];
+  
   const result = {
     id: connId,
     campaignId: connId,
-    connectionType: connTypeId,  // ✅ תיקון: השתמש ב-connTypeId
-    // ✅ תיקון: אם לא נמצא connectionType, השתמש בערכים מה-conn עצמו
+    connectionType: connTypeId,
     connectionTypeName: connectionType?.Name || conn.connectionTypeName || conn.Name || conn.Title || 'Unknown',
     connectionTypeDescription: connectionType?.Description || conn.connectionTypeDescription || conn.Description || '',
-    name: conn.Title || conn.Name || conn.name || '',  // ✅ הוסף conn.name
-    description: conn.Description || conn.description || '',  // ✅ הוסף conn.description
+    name: conn.Title || conn.Name || conn.name || '',
+    description: conn.Description || conn.description || '',
     status: conn.Active ? 'active' : 'inactive',
     
-    // ✅ אמצעי תשלום
-    paymentMethods: mapPayOptionsToMethods(conn.PayOptions || 0),
+    // ✅ תיקון: השתמש ב-PaymentMethodIds
+    paymentMethods: mapPayOptionsToMethods(paymentMethodIds),
     campaignType: conn.IsTrumot ? 'donations' : 'regular',
     
-    // ✅ Tokens
     token: conn.Token?.trim() || '',
     apiToken: conn.ApiToken || '',
     qaId: conn.Token?.trim() || '',
@@ -555,7 +617,6 @@ async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
     createdAt: conn.CreateDate || null,
     updatedAt: conn.UpdateDate || null,
 
-    // ✅ הגדרות
     settings: {
       webhook: conn.webhook || '',
       email: conn.Email || conn.email || '',
@@ -567,12 +628,10 @@ async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
       youtubeLink: conn.youtubeLink || ''
     },
 
-    // ✅ שדות נוספים
     specialOptions: conn.specialOptions || [],
     thankYouEmail: conn.EmailNote || conn.thankyou_page || conn.thankYouEmail || '',
     items: conn.items || [],
     
-    // ✅ עוד שדות חשובים
     title: conn.Title || conn.Name || conn.title || '',
     note: conn.Note || conn.note || '',
     footer: conn.Footer || conn.footer || '',
@@ -592,84 +651,28 @@ async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
     ogTitle: conn.OgTitle || '',
     ogDescription: conn.OgDescription || '',
     ogImagePath: conn.OgImagePath || '',
-    
-    // ✅ פרטים מלאים
+
+    // ✅ חוזים להוראות קבע
+    recurringContractId: conn.recurringContractId || null,
+    recurringBankContractId: conn.recurringBankContractId || null,
+
     fullData: conn
   };
-  
+
   console.log('✅ mapConnectionFromServer result:', result);
   return result;
 }
-// async function mapConnectionFromServer(conn, companyId, connectionTypes = []) {
-//   const connectionType = connectionTypes.find(t => t.IdConnectType === conn.IdConnectType);
-
-//   return {
-//     id: conn.C_id,
-//     campaignId: conn.C_id,
-//     connectionType: conn.IdConnectType,
-//     connectionTypeName: connectionType?.Name || conn.Name,
-//     connectionTypeDescription: connectionType?.Description || '',
-//     name: conn.Title || conn.Name,
-//     description: conn.Description || '',
-//     status: conn.Active ? 'active' : 'inactive',
-    
-//     // ✅ אמצעי תשלום
-//     paymentMethods: mapPayOptionsToMethods(conn.PayOptions || 0),
-//     campaignType: conn.IsTrumot ? 'donations' : 'regular',
-    
-//     token: conn.Token?.trim() || '',
-//     apiToken: conn.ApiToken || '',
-//     qaId: conn.Token?.trim() || '',
-//     lastUsed: conn.UpdateDate || conn.CreateDate || null,
-//     createdAt: conn.CreateDate || null,
-//     updatedAt: conn.UpdateDate || null,
-
-//     settings: {
-//       webhook: conn.webhook,
-//       email: conn.Email,
-//       emailName: conn.EmailName,
-//       sendEmail: conn.SendEmail,
-//       logo: conn.Logo,
-//       logoMobile: conn.LogoMobile,
-//       maxNumPay: conn.MaxNumPay,
-//       youtubeLink: conn.youtubeLink
-//     },
-
-//     specialOptions: [],
-//     thankYouEmail: conn.EmailNote || conn.thankyou_page || '',
-//     items: [],
-
-//     title: conn.Title,
-//     note: conn.Note,
-//     footer: conn.Footer,
-//     allowUploadFiles: conn.allowUploadFiles,
-//     allowShipping: conn.allowShipping,
-//     allowZeroSum: conn.allowZeroSum,
-//     allowCoupon: conn.AllowCoupon,
-//     allowCards: conn.AllowCards,
-//     rules: conn.rules,
-//     rulesTitle: conn.rulesTitle,
-//     rulesShow: conn.rulesShow,
-//     theme: conn.Theme,
-//     styleSheetUrl: conn.StyleSheetUrl,
-//     gaMeasurementId: conn.gaMeasurementId,
-//     visitCode: conn.VisitCode,
-//     conversionCode: conn.ConversionCode,
-//     ogTitle: conn.OgTitle,
-//     ogDescription: conn.OgDescription,
-//     ogImagePath: conn.OgImagePath
-//   };
-// }
-
-// ✅ אל תחזור על ההגדרה עוד פעם!
 // בניית בקשת יצירת חיבור
 function buildCreateConnectionRequest(data) {
+  console.log('🔧 buildCreateConnectionRequest - data received:', data); // ✅ DEBUG
 
   const request = {
     connectionName: data.connectionName,
-    connectionType: data.connectionType, // מספר IdConnectType
+    connectionType: data.connectionType,
     connectionDescription: data.connectionDescription,
-    connectionStatus: data.connectionStatus || 'active'
+    connectionStatus: data.connectionStatus || 'active',
+     IsTrumot: data.campaignType === 'donations',  // true אם קמפיין תרומות
+
   };
 
   // הגדרות בסיסיות
@@ -678,15 +681,15 @@ function buildCreateConnectionRequest(data) {
   }
 
   // פרטי קמפיין
-  if (data.thankYouEmail || data.Title || data.Note) {
+  if (data.thankYouEmail || data.Title || data.Note || data.email || data.emailName) {
     request.campaignDetails = {
       title: data.Title || data.connectionName,
       note: data.Note || '',
       footer: data.Footer || '',
       description: data.connectionDescription || '',
-      email: data.Email || '',
-      emailName: data.EmailName || '',
-      sendEmail: data.SendEmail !== false,
+      email: data.email || data.Email || '',
+      emailName: data.emailName || data.EmailName || '',
+      sendEmail: data.sendEmail !== false,
       logo: data.Logo || '',
       logoMobile: data.LogoMobile || '',
       fullWidthLogo: data.FullWidthLogo || false,
@@ -696,18 +699,45 @@ function buildCreateConnectionRequest(data) {
     };
   }
 
-  // אמצעי תשלום
-  if (data.paymentMethods && data.paymentMethods.length > 0) {
-    request.paymentMethods = data.paymentMethods
-    // .map(method => mapMethodToPaymentOption(method))
-    // .filter(Boolean);
-    if (request.paymentButtonTexts && Object.keys(request.paymentButtonTexts).length > 0) {
-      request.customPaymentButtons = Object.entries(request.paymentButtonTexts).map(([method, texts]) => ({
-        paymentMethod: method,
-        title: texts.title || '',
-        description: texts.description || ''
-      }));
+ // ✅ אמצעי תשלום - שלח IDs וגם שמות!
+  if (Array.isArray(data.paymentMethods) && data.paymentMethods.length > 0) {
+    console.log('🔍 paymentMethods received:', data.paymentMethods);
+
+    // ✅ חלץ גם IDs וגם שמות
+    const paymentData = mapMethodsToPayOptions(data.paymentMethods);
+
+    console.log('🔍 Mapped payment data:', paymentData);
+
+    // ✅ שלח את שניהם!
+    request.paymentMethods = paymentData.names;      // ['credit_card', 'bit', ...]
+    request.PaymentMethodIds = paymentData.ids;      // [1, 11, ...]
+    request.PaymentOptions = paymentData.idsString;  // "1,11,..."
+    request.PaymentMethodNames = paymentData.namesString;  // "credit_card,bit,..."
+
+    // ✅ אם יש הוראת קבע רגילה/מיידית, שלח את ה-contractId
+    const hasRecurring = data.paymentMethods.some(m =>
+      m === 'recurring_payment' || m === 'recurring_payment_immediate'
+    );
+    if (hasRecurring && data.recurringContractId) {
+      request.recurringContractId = data.recurringContractId;
+      console.log('🔍 Recurring contract ID:', data.recurringContractId);
     }
+
+    // ✅ אם יש הוראת קבע בנקאית, שלח את ה-contractId שלה
+    const hasBankRecurring = data.paymentMethods.includes('recurring_payment_bank');
+    if (hasBankRecurring && data.recurringBankContractId) {
+      request.recurringBankContractId = data.recurringBankContractId;
+      console.log('🔍 Bank recurring contract ID:', data.recurringBankContractId);
+    }
+  }
+
+  // כפתורים מותאמים
+  if (data.paymentButtonTexts && Object.keys(data.paymentButtonTexts).length > 0) {
+    request.customPaymentButtons = Object.entries(data.paymentButtonTexts).map(([method, texts]) => ({
+      paymentMethod: method,
+      title: texts.title || '',
+      description: texts.description || ''
+    }));
   }
 
   // פריטים
@@ -733,44 +763,42 @@ function buildCreateConnectionRequest(data) {
     };
   }
 
- // ✅ תבנית אימייל - רק אם יש תוכן אמיתי
-// ✅ תבנית אימייל - רק אם יש תוכן אמיתי
-const hasEmailContent = data.email || data.emailName || data.emailSubject || data.thankYouEmail;
+  // ✅ תבנית אימייל
+  const hasEmailContent = data.email || data.emailName || data.emailSubject || data.thankYouEmail;
 
-console.log('🔍 Email fields received:', {
-  email: data.email,
-  emailName: data.emailName,
-  emailSubject: data.emailSubject,
-  thankYouEmail: data.thankYouEmail
-});
+  if (hasEmailContent) {
+    request.emailTemplates = {};
 
-console.log('🔍 hasEmailContent:', hasEmailContent);
+    if (data.email && data.email.trim()) {
+      request.emailTemplates.email = data.email.trim();
+    }
+    if (data.emailName && data.emailName.trim()) {
+      request.emailTemplates.emailName = data.emailName.trim();
+    }
+    if (data.emailSubject && data.emailSubject.trim()) {
+      request.emailTemplates.paySuccessMailTitle = data.emailSubject.trim();
+    }
+    if (data.thankYouEmail && data.thankYouEmail.trim()) {
+      request.emailTemplates.emailNote = data.thankYouEmail.trim();
+    }
 
-if (hasEmailContent) {
-  request.emailTemplates = {};
-  
-  // ✅ הוסף רק שדות שיש להם ערך - תיקון הבדיקה
-  if (data.email && data.email.trim()) {
-    request.emailTemplates.email = data.email.trim();
-  }
-  if (data.emailName && data.emailName.trim()) {
-    request.emailTemplates.emailName = data.emailName.trim();
-  }
-  if (data.emailSubject && data.emailSubject.trim()) {
-    request.emailTemplates.paySuccessMailTitle = data.emailSubject.trim();
-  }
-  if (data.thankYouEmail && data.thankYouEmail.trim()) {
-    request.emailTemplates.emailNote = data.thankYouEmail.trim();
-  }
-  
-  // sendEmail - רק אם יש מייל
-  if (data.email && data.email.trim()) {
-    request.emailTemplates.sendEmail = data.sendEmail !== false;
-  }
-  
-  console.log('✅ emailTemplates created:', request.emailTemplates);
-}
+    if (data.email && data.email.trim()) {
+      request.emailTemplates.sendEmail = data.sendEmail !== false;
+    }
 
+    console.log('✅ emailTemplates created:', request.emailTemplates);
+  }
+
+  // ✅ Webhook
+  if (data.webhook !== undefined) {
+    request.webhook = data.webhook;
+    console.log('✅ webhook added to request:', data.webhook);
+  }
+
+  // ✅ הגדרות נוספות
+  if (data.maxNumPay !== undefined) {
+    request.maxNumPay = data.maxNumPay;
+  }
 
   // הגדרות תצוגה
   request.display = {
@@ -794,78 +822,140 @@ if (hasEmailContent) {
     currencyId: 1
   };
 
+  console.log('✅ Final request body:', request); // ✅ DEBUG
   return request;
 }
+// בניית בקשת עדכון חיבור
 
 // בניית בקשת עדכון חיבור
 function buildUpdateConnectionRequest(updates) {
+  console.log('🔧 buildUpdateConnectionRequest - updates received:', updates); // ✅ DEBUG
+  
   const request = {};
-
+  if (updates.campaignType !== undefined) {
+    request.IsTrumot = updates.campaignType === 'donations';  // true אם קמפיין תרומות
+    console.log('🔍 IsTrumot set to:', request.IsTrumot);
+  }
   // ✅ התאמה לשמות שבאים מהטופס
-    if (updates.connectionType) request.connectionType = updates.connectionType;
+  if (updates.connectionType) request.connectionType = updates.connectionType;
   if (updates.connectionTypeName) request.connectionTypeName = updates.connectionTypeName;
   if (updates.connectionName) request.connectionName = updates.connectionName;
   if (updates.connectionDescription) request.connectionDescription = updates.connectionDescription;
   if (updates.connectionStatus) request.connectionStatus = updates.connectionStatus;
 
-  // (אופציונלי) עדכון פרטי קמפיין
-  if (updates.connectionName || updates.connectionDescription) {
+  // ✅ עדכון פרטי קמפיין
+  if (updates.connectionName || updates.connectionDescription || updates.email || updates.emailName) {
     request.campaignDetails = {};
     if (updates.connectionName) request.campaignDetails.title = updates.connectionName;
     if (updates.connectionDescription) request.campaignDetails.description = updates.connectionDescription;
+    if (updates.email) request.campaignDetails.email = updates.email;
+    if (updates.emailName) request.campaignDetails.emailName = updates.emailName;
+    if (updates.email) request.campaignDetails.sendEmail = updates.sendEmail !== false;
   }
 
-  // ✅ אם השרת תומך בעדכון אמצעי תשלום/פריטים/מייל וכו' — הוסף כאן לפי ה-API שלך
-  // לדוגמה:
-  if (Array.isArray(updates.paymentMethods)) request.paymentMethods = updates.paymentMethods;
-  if (updates.paymentButtonTexts) request.customPaymentButtons = Object.entries(updates.paymentButtonTexts).map(([method, texts]) => ({
-    paymentMethod: method,
-    title: texts.title || '',
-    description: texts.description || ''
-  }));
-  if (Array.isArray(updates.items)) request.items = updates.items;
+  // ✅ אמצעי תשלום - תיקון חשוב!
+ if (Array.isArray(updates.paymentMethods) && updates.paymentMethods.length > 0) {
+    console.log('🔍 paymentMethods received:', updates.paymentMethods);
 
-// ✅ תבנית אימייל - רק אם יש תוכן אמיתי
-const hasEmailContent = updates.email || updates.emailName || updates.emailSubject || updates.thankYouEmail;
+    // ✅ חלץ גם IDs וגם שמות
+    const paymentData = mapMethodsToPayOptions(updates.paymentMethods);
 
-console.log('🔍 Email fields received:', {
-  email: updates.email,
-  emailName: updates.emailName,
-  emailSubject: updates.emailSubject,
-  thankYouEmail: updates.thankYouEmail
-});
+    console.log('🔍 Mapped payment data:', paymentData);
 
-console.log('🔍 hasEmailContent:', hasEmailContent);
+    // ✅ שלח את שניהם!
+    request.paymentMethods = paymentData.names;      // ['credit_card', 'bit', ...]
+    request.PaymentMethodIds = paymentData.ids;      // [1, 11, ...]
+    request.PaymentOptions = paymentData.idsString;  // "1,11,..."
+    request.PaymentMethodNames = paymentData.namesString;  // "credit_card,bit,..."
 
-if (hasEmailContent) {
-  request.emailTemplates = {};
-  
-  // ✅ הוסף רק שדות שיש להם ערך - תיקון הבדיקה
-  if (updates.email && updates.email.trim()) {
-    request.emailTemplates.email = updates.email.trim();
+    // ✅ אם יש הוראת קבע רגילה/מיידית, שלח את ה-contractId
+    const hasRecurring = updates.paymentMethods.some(m =>
+      m === 'recurring_payment' || m === 'recurring_payment_immediate'
+    );
+    if (hasRecurring && updates.recurringContractId) {
+      request.recurringContractId = updates.recurringContractId;
+      console.log('🔍 Recurring contract ID:', updates.recurringContractId);
+    }
+
+    // ✅ אם יש הוראת קבע בנקאית, שלח את ה-contractId שלה
+    const hasBankRecurring = updates.paymentMethods.includes('recurring_payment_bank');
+    if (hasBankRecurring && updates.recurringBankContractId) {
+      request.recurringBankContractId = updates.recurringBankContractId;
+      console.log('🔍 Bank recurring contract ID:', updates.recurringBankContractId);
+    }
   }
-  if (updates.emailName && updates.emailName.trim()) {
-    request.emailTemplates.emailName = updates.emailName.trim();
-  }
-  if (updates.emailSubject && updates.emailSubject.trim()) {
-    request.emailTemplates.paySuccessMailTitle = updates.emailSubject.trim();
-  }
-  if (updates.thankYouEmail && updates.thankYouEmail.trim()) {
-    request.emailTemplates.emailNote = updates.thankYouEmail.trim();
-  }
-  
-  // sendEmail - רק אם יש מייל
-  if (updates.email && updates.email.trim()) {
-    request.emailTemplates.sendEmail = updates.sendEmail !== false;
-  }
-  
-  console.log('✅ emailTemplates created:', request.emailTemplates);
-}
 
+  // ✅ כפתורי תשלום מותאמים
+  if (updates.paymentButtonTexts && Object.keys(updates.paymentButtonTexts).length > 0) {
+    request.customPaymentButtons = Object.entries(updates.paymentButtonTexts).map(([method, texts]) => ({
+      paymentMethod: method,
+      title: texts.title || '',
+      description: texts.description || ''
+    }));
+  }
 
+  // ✅ פריטים
+  if (Array.isArray(updates.items) && updates.items.length > 0) {
+    request.items = updates.items.map(item => ({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      sku: item.sku,
+      quantity: item.quantity,
+      type: item.type || 1,
+      isForContact: item.isForContact || false,
+      iconLink: item.iconLink || null,
+      sortOrder: item.sortOrder || 0
+    }));
+  }
+
+  // ✅ תבנית אימייל
+  const hasEmailContent = updates.email || updates.emailName || updates.emailSubject || updates.thankYouEmail;
+
+  console.log('🔍 Email fields received:', {
+    email: updates.email,
+    emailName: updates.emailName,
+    emailSubject: updates.emailSubject,
+    thankYouEmail: updates.thankYouEmail
+  });
+
+  if (hasEmailContent) {
+    request.emailTemplates = {};
+
+    if (updates.email && updates.email.trim()) {
+      request.emailTemplates.email = updates.email.trim();
+    }
+    if (updates.emailName && updates.emailName.trim()) {
+      request.emailTemplates.emailName = updates.emailName.trim();
+    }
+    if (updates.emailSubject && updates.emailSubject.trim()) {
+      request.emailTemplates.paySuccessMailTitle = updates.emailSubject.trim();
+    }
+    if (updates.thankYouEmail && updates.thankYouEmail.trim()) {
+      request.emailTemplates.emailNote = updates.thankYouEmail.trim();
+    }
+
+    if (updates.email && updates.email.trim()) {
+      request.emailTemplates.sendEmail = updates.sendEmail !== false;
+    }
+
+    console.log('✅ emailTemplates created:', request.emailTemplates);
+  }
+
+  // ✅ Webhook
+  if (updates.webhook !== undefined) {
+    request.webhook = updates.webhook;
+    console.log('✅ webhook added to request:', updates.webhook);
+  }
+
+  // ✅ הגדרות נוספות
+  if (updates.maxNumPay !== undefined) {
+    request.maxNumPay = updates.maxNumPay;
+  }
+
+  console.log('✅ Final request body:', request); // ✅ DEBUG
   return request;
 }
-
 
 // מיפוי IdConnectType לערך טקסטואלי
 function mapConnectionTypeIdToValue(idConnectType) {
@@ -882,7 +972,7 @@ function mapConnectionTypeIdToValue(idConnectType) {
 }
 
 // Export the appropriate service
-export const apiConnectionsService = USE_MOCK ? mockApiConnectionsService : realApiService;
+export const apiConnectionsService =  realApiService;
 
 // Export individual methods
 export const {
@@ -895,5 +985,6 @@ export const {
   deleteConnection,
   testConnection,
   regenerateApiToken,
-  getItems
+  getItems,
+  getAllContracts
 } = apiConnectionsService;

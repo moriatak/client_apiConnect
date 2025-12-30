@@ -90,8 +90,8 @@ const ConnectionsTable = ({ onEdit, onDelete, onTest, onViewToken }) => {
               <th>סוג חיבור</th>
               <th>שם ותיאור</th>
               <th>אמצעי תשלום</th>
-              <th>Token</th>
-              <th>QR</th>
+              {/* <th>Token</th> */}
+              <th>QR & Token</th>
               <th>שימוש אחרון</th>
               <th>סטטוס</th>
               <th>פעולות</th>
@@ -126,95 +126,3 @@ const ConnectionsTable = ({ onEdit, onDelete, onTest, onViewToken }) => {
 };
 
 export default ConnectionsTable;
-// ...existing code...
-// import React from 'react';
-// import styles from './ConnectionsTable.module.css';
-// import { useApiConnections } from '../../../contexts/ApiConnectionsContext';
-// import ConnectionRow from './ConnectionRow';
-// import LoadingSpinner from '../../shared/LoadingSpinner';
-// import ErrorMessage from '../../shared/ErrorMessage';
-
-// const ConnectionsTable = ({ onEdit, onDelete, onTest, onViewToken }) => {
-//   const { connections, loading, error, filters, updateConnection } = useApiConnections();
-
-//   if (loading) {
-//     return <LoadingSpinner message="טוען חיבורים..." />;
-//   }
-
-//   if (error) {
-//     return <ErrorMessage message={error} />;
-//   }
-
-//   // סינון החיבורים
-//   const filteredConnections = connections.filter(connection => {
-//     const matchesSearch = filters.searchTerm === '' ||
-//       connection.name?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-//       connection.qaId?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-//       connection.token?.toLowerCase().includes(filters.searchTerm.toLowerCase());
-
-//     const matchesStatus = filters.status === 'all' ||
-//       connection.status === filters.status;
-
-//     const matchesType = filters.connectionType === 'all' ||
-//       connection.connectionType === parseInt(filters.connectionType);
-
-//     return matchesSearch && matchesStatus && matchesType;
-//   });
-
-//   if (filteredConnections.length === 0) {
-//     return (
-//       <div className={styles.tableContainer}>
-//         <div className={styles.emptyState}>
-//           <i className="fa fa-search"></i>
-//           <h3>לא נמצאו תוצאות</h3>
-//           <p>
-//             {filters.searchTerm || filters.status !== 'all' || filters.connectionType !== 'all'
-//               ? 'נסה לשנות את הפילטרים שלך'
-//               : 'לא נמצאו חיבורים. התחל על ידי יצירת חיבור חדש.'}
-//           </p>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className={styles.tableContainer}>
-//       <div className={styles.tableWrapper}>
-//         <table className={styles.connectionsTable}>
-//           <thead>
-//             <tr>
-//               <th>סוג חיבור</th>
-//               <th>שם ותיאור</th>
-//               <th>אמצעי תשלום</th>
-//               <th>Token</th>
-//               <th>QA ID</th>
-//               <th>שימוש אחרון</th>
-//               <th>סטטוס</th>
-//               <th>פעולות</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {filteredConnections.map((connection) => (
-//               <ConnectionRow
-//                 key={connection.id}
-//                 connection={connection}
-//                 onEdit={onEdit}
-//                 onTest={onTest}
-//                 onDelete={onDelete}
-//                 onViewToken={onViewToken}
-//               />
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       <div className={styles.tableFooter}>
-//         <span className={styles.totalCount}>
-//           מוצגים {filteredConnections.length} מתוך {connections.length} חיבורים
-//         </span>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ConnectionsTable;
