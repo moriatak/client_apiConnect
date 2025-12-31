@@ -5,12 +5,13 @@ import { auth } from '../utils/auth';
 const USE_MOCK = false; // שנה ל-true אם רוצה לעבוד עם Mock
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://qa.tak.co.il/campaignServer/connetToApi';
 
-// פונקציה לקבלת idCompany מה-session/cookies
+// פונקציה לקבלת idCompany מהטוקן
 const getCompanyId = () => {
-  // אם יש לך דרך לקבל את ה-idCompany, שים כאן
-  // לדוגמה מ-localStorage או cookies
-  return auth.getCompanyId() || '62'; // ברירת מחדל זמנית
-
+  const companyId = auth.getCompanyId();
+  if (!companyId) {
+    throw new Error('לא נמצא Company ID בטוכן האימות');
+  }
+  return companyId;
 };
 
 function mapPaymentOptionToMethod(paymentOption) {

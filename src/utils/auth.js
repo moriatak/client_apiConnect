@@ -1,46 +1,48 @@
 // ניהול פרטי התחברות וזיהוי חברה
+// משתמש בטוקן מה-URL ומנהל את פרטי האימות
+
+let authData = null;
 
 export const auth = {
-  // קבלת Company ID
+  // שמירת נתוני אימות מהטוקן
+  setAuthData(data) {
+    authData = data;
+  },
+
+  // קבלת Company ID מהטוקן
   getCompanyId() {
-    // נסה מ-localStorage
-    let companyId = localStorage.getItem('admin_company');
-    
-    // נסה מ-sessionStorage
-    if (!companyId) {
-      companyId = sessionStorage.getItem('admin_company');
-    }
-    
-    // נסה מ-cookies
-    if (!companyId) {
-      companyId = this.getCookie('admin_company');
-    }
-    
-    return companyId;
+    return authData?.companyId || null;
   },
 
-  // שמירת Company ID
-  setCompanyId(companyId) {
-    localStorage.setItem('admin_company', companyId);
-    sessionStorage.setItem('admin_company', companyId);
+  // קבלת User ID מהטוקן
+  getUserId() {
+    return authData?.userId || null;
   },
 
-  // קבלת Cookie
-  getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
+  // קבלת הטוקן המלא
+  getToken() {
+    return authData?.token || null;
+  },
+
+  // קבלת payload מהטוקן
+  getPayload() {
+    return authData?.payload || null;
   },
 
   // בדיקה אם מחובר
   isAuthenticated() {
-    return !!this.getCompanyId();
+    return !!authData && !!authData.token && !!authData.companyId;
+  },
+
+  // בדיקה אם הטוכן פג תוקף
+  isTokenExpired() {
+    if (!authData?.expiresAt) return true;
+    const now = Math.floor(Date.now() / 1000);
+    return authData.expiresAt < now;
   },
 
   // ניקוי נתונים
   logout() {
-    localStorage.removeItem('admin_company');
-    sessionStorage.removeItem('admin_company');
+    authData = null;
   }
 };
