@@ -14,6 +14,20 @@ const getCompanyId = () => {
   return companyId;
 };
 
+// פונקציה ליצירת headers עם Authorization
+const getAuthHeaders = () => {
+  const token = auth.getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
 function mapPaymentOptionToMethod(paymentOption) {
   const mapping = {
     1: 'credit_card',      // כרטיס אשראי
@@ -64,7 +78,9 @@ const realApiService = {
   // קבלת סוגי חיבורים זמינים
   async getConnectionTypes() {
     try {
-      const response = await fetch(`${API_BASE_URL}/getAllTypeConnect`);
+      const response = await fetch(`${API_BASE_URL}/getAllTypeConnect`, {
+        headers: getAuthHeaders()
+      });
       const result = await response.json();
 
       if (result.success) {
@@ -88,10 +104,8 @@ const realApiService = {
       const url = `${API_BASE_URL}/getPaymentOptions/${companyId}`;
 
       const options = {
-        method: 'POST', // שנה ל-POST
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        method: 'POST',
+        headers: getAuthHeaders()
       };
 
       // אם יש cId, שלח בגוף הבקשה
@@ -141,9 +155,7 @@ const realApiService = {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(requestBody)
       });
 
@@ -183,7 +195,9 @@ const realApiService = {
 
       const url = `${API_BASE_URL}/get_connections/${companyId}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders()
+      });
       const result = await response.json();
 
       if (result.success && Array.isArray(result.data)) {
@@ -237,9 +251,7 @@ async getConnectionDetails(connectionId) {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ cId: connectionId })
     });
 
@@ -306,9 +318,7 @@ async getConnectionDetails(connectionId) {
 
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(requestBody)
       });
 
@@ -336,9 +346,7 @@ async getConnectionDetails(connectionId) {
 
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ cId: connectionId })
       });
 
@@ -366,9 +374,7 @@ async getConnectionDetails(connectionId) {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ cId: connectionId })
       });
 
@@ -393,9 +399,7 @@ async getConnectionDetails(connectionId) {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ cId: connectionId })
       });
 
@@ -424,9 +428,7 @@ async getConnectionDetails(connectionId) {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ cId: connectionId })
       });
 
@@ -463,7 +465,9 @@ async getConnectionDetails(connectionId) {
       const companyId = getCompanyId();
       const url = `${API_BASE_URL}/getAllContrac/${companyId}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders()
+      });
       const result = await response.json();
 
       if (result.success && Array.isArray(result.data)) {

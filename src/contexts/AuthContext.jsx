@@ -95,20 +95,8 @@ export const AuthProvider = ({ children }) => {
           payload: tokenValidation.payload
         });
 
-        // הגדר טיימר לבדיקת תפוגה
-        const expiryCheck = setInterval(() => {
-          if (isTokenExpired(tokenValidation.expiresAt)) {
-            console.warn('⚠️ הטוקן פג תוקף');
-            setAuthState(prev => ({
-              ...prev,
-              isAuthenticated: false,
-              error: 'הטוקן פג תוקף. אנא התחבר מחדש'
-            }));
-            clearInterval(expiryCheck);
-          }
-        }, 60000); // בדוק כל דקה
-
-        return () => clearInterval(expiryCheck);
+        // הערה: אין בדיקת תפוגה מתמשכת - המשתמש נשאר מחובר עד לסגירת הדף
+        console.log('✅ משתמש יישאר מחובר עד לסגירת הדף (אין בדיקת תפוגה אוטומטית)');
       } catch (error) {
         console.error('❌ שגיאה באימות:', error);
         setAuthState({
