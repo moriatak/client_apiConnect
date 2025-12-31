@@ -4,6 +4,9 @@
 
 const ALLOWED_PARENT_ORIGIN = 'https://portal.tak.co.il';
 
+// אפשרות לעקוף בדיקות אבטחה בפיתוח (VITE_SKIP_SECURITY_CHECK=true)
+const SKIP_SECURITY_CHECK = import.meta.env.VITE_SKIP_SECURITY_CHECK === 'true';
+
 /**
  * בודק אם האפליקציה רצה בתוך iframe
  */
@@ -21,6 +24,7 @@ export function isInIframe() {
  */
 export function isParentOriginAllowed() {
   if (!isInIframe()) {
+    console.log('🔍 לא ב-iframe');
     return false;
   }
 
@@ -28,8 +32,34 @@ export function isParentOriginAllowed() {
     // ננסה לזהות את ה-parent origin מה-referrer
     const parentOrigin = document.referrer;
 
+    console.log('🔍 Debug Info:', {
+      'document.referrer': parentOrigin,
+      'window.location.href': window.location.href,
+      'window.location.ancestorOrigins': window.location.ancestorOrigins ?
+        Array.from(window.location.ancestorOrigins) : 'לא זמין',
+      'isInIframe': isInIframe(),
+      'ALLOWED_PARENT_ORIGIN': ALLOWED_PARENT_ORIGIN
+    });
+
+    // אם אין referrer, ננסה ancestorOrigins (Chrome/Edge)
     if (!parentOrigin) {
-      console.warn('⚠️ לא ניתן לזהות את מקור ה-parent frame');
+      if (window.location.ancestorOrigins && window.location.ancestorOrigins.length > 0) {
+        const ancestorOrigin = window.location.ancestorOrigins[0];
+        console.log('🔍 משתמש ב-ancestorOrigins:', ancestorOrigin);
+
+        const allowedUrl = new URL(ALLOWED_PARENT_ORIGIN);
+        const isAllowed = ancestorOrigin === allowedUrl.origin;
+
+        if (isAllowed) {
+          console.log('✅ Parent origin מאושר (ancestorOrigins):', ancestorOrigin);
+          return true;
+        } else {
+          console.error('❌ Parent origin לא מאושר (ancestorOrigins):', ancestorOrigin, 'ציפינו ל:', allowedUrl.origin);
+          return false;
+        }
+      }
+
+      console.warn('⚠️ לא ניתן לזהות את מקור ה-parent frame - אין referrer ואין ancestorOrigins');
       return false;
     }
 
@@ -41,7 +71,7 @@ export function isParentOriginAllowed() {
     if (isAllowed) {
       console.log('✅ Parent origin מאושר:', parentUrl.origin);
     } else {
-      console.error('❌ Parent origin לא מאושר:', parentUrl.origin);
+      console.error('❌ Parent origin לא מאושר:', parentUrl.origin, 'ציפינו ל:', allowedUrl.origin);
     }
 
     return isAllowed;
@@ -55,6 +85,12 @@ export function isParentOriginAllowed() {
  * בודק את כל תנאי האבטחה
  */
 export function validateSecurityRequirements() {
+  // אפשרות לדלג על בדיקות אבטחה (לפיתוח בלבד!)
+  if (SKIP_SECURITY_CHECK) {
+    console.warn('⚠️⚠️⚠️ בדיקות אבטחה מושבתות! (VITE_SKIP_SECURITY_CHECK=true)');
+    return { valid: true, errors: [] };
+  }
+
   const errors = [];
 
   // בדיקה 1: האפליקציה חייבת לרוץ בתוך iframe
