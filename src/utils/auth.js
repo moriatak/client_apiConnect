@@ -24,9 +24,14 @@ export const auth = {
     return authData?.token || null;
   },
 
-  // קבלת payload מהטוקן
+  // קבלת payload מהטוכן
   getPayload() {
     return authData?.payload || null;
+  },
+
+  // קבלת expiresAt
+  getExpiresAt() {
+    return authData?.expiresAt || null;
   },
 
   // בדיקה אם מחובר
