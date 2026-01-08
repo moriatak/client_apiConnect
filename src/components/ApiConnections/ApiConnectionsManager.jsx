@@ -216,26 +216,26 @@ const handleEditConnection = async (connection) => {
             icon="fa-book"
             title="מדריך כללי"
             description="איך לחבר את הAPI לאתר חיצוני"
-            link="/docs/general_api_guide.pdf"
+            link="https://docs.tak.co.il/api/"
           />
           <DocumentationCard
             icon="fa-wordpress"
             title="WordPress"
             description="חיבור וורדפרס לAPI תקציבית"
-            link="/docs/wordpress_api_guide.pdf"
+            link="https://docs.tak.co.il/api/wordpress/"
           />
           <DocumentationCard
             icon="fa-file-text"
-            title="טיקצאק"
-            description="חיבור טיקצאק לAPI תקציבית"
-            link="/docs/tiktzak_api_guide.pdf"
+            title=" API תקציבית"
+            description=" API תקציבית"
+            link="https://docs.tak.co.il/api/taktzivit-payment-api/"
           />
-          <DocumentationCard
+          {/* <DocumentationCard
             icon="fa-bullhorn"
             title="צרידי"
             description="חיבור צרידי לAPI תקציבית"
             link="/docs/zridi_api_guide.pdf"
-          />
+          /> */}
         </div>
       </div>
     </div>
